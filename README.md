@@ -89,7 +89,7 @@ public class HBase2ESFullDemo {
 修改完毕配置后，就可以进行功能调试了。
 
 
-测试调试通过后，就可以构建发布可运行的版本了：进入命令行模式，在源码工程根目录Elasticsearch-Elasticsearch下运行以下gradle指令打包发布版本
+测试调试通过后，就可以构建发布可运行的版本了：进入命令行模式，在源码工程根目录hbase-elasticsearch下运行以下gradle指令打包发布版本
 
 release.bat
 
