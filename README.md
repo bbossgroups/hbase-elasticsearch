@@ -9,16 +9,13 @@ Elasticsearch version requirements: 1.x,2.X,5.X,6.X,7.x,+
 
 Spring booter 1.x,2.x,+
 # HBase-Elasticsearch 数据同步工具demo
-使用本demo所带的应用程序运行容器环境，可以快速编写，打包发布可运行的数据导入工具
-包含两个现成的示例：
+使用本demo所带的应用程序运行容器环境，可以快速编写，打包发布可运行的数据导入工具，包含现成的示例如下：
 ## jdk timer定时全量同步
 org.frameworkset.elasticsearch.imp.HBase2ESFullDemo
 ## jdk timer定时增量同步
 org.frameworkset.elasticsearch.imp.HBase2ESScrollTimestampDemo
 ## jdk timer定时带条件同步
 org.frameworkset.elasticsearch.imp.HBase2ESFullDemoWithFilter
-
-
 ## quartz定时全量同步
 org.frameworkset.elasticsearch.imp.QuartzHBase2ESImportTask
 ## 支持的数据库：
@@ -52,7 +49,9 @@ hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本
 本案例基于hbase 1.3.0版本开发，所以选择的是1.2.4的客户端，具体的client版本号可以根据hbase版本自行选择：
 
 https://search.maven.org/artifact/org.apache.hbase/hbase-shaded-client
-
+```
+compile([group: 'org.apache.hbase', name: 'hbase-shaded-client', version: "1.2.4", transitive: true])
+```
 # 构建部署
 ## 准备工作
 需要通过gradle构建发布版本,gradle安装配置参考文档：
