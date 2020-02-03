@@ -18,9 +18,7 @@ package org.frameworkset.elasticsearch.imp;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
 import org.frameworkset.tran.EsIdGenerator;
-import org.frameworkset.tran.config.ClientOptions;
 import org.frameworkset.tran.context.Context;
-import org.frameworkset.tran.es.ESField;
 import org.frameworkset.tran.hbase.HBaseExportBuilder;
 import org.frameworkset.tran.schedule.CallInterceptor;
 import org.frameworkset.tran.schedule.TaskContext;
@@ -29,7 +27,7 @@ import java.util.Date;
 
 /**
  * <p>Description: 将保存在hbase中pinpoint AgentInfo信息定时全量同步到elasticsearch中</p>
- * <p></p>
+ * <p>hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本调整hbase shaded client的版本号</p>
  * <p>Copyright (c) 2018</p>
  * @Date 2019/1/11 14:39
  * @author biaoping.yin
@@ -46,13 +44,18 @@ public class HBase2ESFullDemo {
 
 	public void scheduleScrollRefactorImportData(){
 		HBaseExportBuilder importBuilder = new HBaseExportBuilder();
-		importBuilder.setBatchSize(1000) //设置批量从源Elasticsearch中拉取的记录数
-				.setFetchSize(5000); //设置批量写入目标Elasticsearch记录数
+		importBuilder.setBatchSize(1000) //设置批量写入目标Elasticsearch记录数
+				.setFetchSize(10000); //设置批量从源Hbase中拉取的记录数,HBase-0.98 默认值为为 100，HBase-1.2 默认值为 2147483647，即 Integer.MAX_VALUE。Scan.next() 的一次 RPC 请求 fetch 的记录条数。配置建议：这个参数与下面的setMaxResultSize配合使用，在网络状况良好的情况下，自定义设置不宜太小， 可以直接采用默认值，不配置。
+
+//		importBuilder.setHbaseBatch(100) //配置获取的列数，假如表有两个列簇 cf，info，每个列簇5个列。这样每行可能有10列了，setBatch() 可以控制每次获取的最大列数，进一步从列级别控制流量。配置建议：当列数很多，数据量大时考虑配置此参数，例如100列每次只获取50列。一般情况可以默认值（-1 不受限）
+//				.setMaxResultSize(10000l);//客户端缓存的最大字节数，HBase-0.98 无该项配置，HBase-1.2 默认值为 210241024，即 2M。Scan.next() 的一次 RPC 请求 fetch 的数据量大小，目前 HBase-1.2 在 Caching 为默认值(Integer Max)的时候，实际使用这个参数控制 RPC 次数和流量。配置建议：如果网络状况较好（万兆网卡），scan 的数据量非常大，可以将这个值配置高一点。如果配置过高：则可能 loadCache 速度比较慢，导致 scan timeout 异常
+		// 参考文档：https://blog.csdn.net/kangkangwanwan/article/details/89332536
+
 
 		/**
 		 * hbase参数配置
 		 */
-		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")
+		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
 				.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
 				.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
@@ -60,23 +63,62 @@ public class HBase2ESFullDemo {
 				.addHbaseClientProperty("hbase.client.operation.timeout","10000")
 				.addHbaseClientProperty("hbase.ipc.client.socket.timeout.read","20000")
 				.addHbaseClientProperty("hbase.ipc.client.socket.timeout.write","30000")
-				.setHbaseTable("AgentInfo")
-				.setHbaseClientThreadCount(100)
+
+				.setHbaseClientThreadCount(100)  //hbase客户端连接线程池参数设置
 				.setHbaseClientThreadQueue(100)
 				.setHbaseClientKeepAliveTime(10000l)
 				.setHbaseClientBlockedWaitTimeout(10000l)
 				.setHbaseClientWarnMultsRejects(1000)
 				.setHbaseClientPreStartAllCoreThreads(true)
 				.setHbaseClientThreadDaemon(true)
-				//.setIncrementFamilyName("Info") //如果是增量同步，需要指定增量同步的
-				;
+
+				.setHbaseTable("AgentInfo") //指定需要同步数据的hbase表名称
+		;
+		//FilterList和filter二选一，只需要设置一种
+//		/**
+//		 * 设置hbase检索filter
+//		 */
+//		SingleColumnValueFilter scvf= new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
+//
+//				CompareOperator.EQUAL,"wap".getBytes());
+//
+//		scvf.setFilterIfMissing(true); //默认为false， 没有此列的数据也会返回 ，为true则只返回name=lisi的数据
+//
+//		importBuilder.setFilter(scvf);
+
+		/**
+		 * 设置hbase组合条件FilterList
+		 * FilterList 代表一个过滤器链，它可以包含一组即将应用于目标数据集的过滤器，过滤器间具有“与” FilterList.Operator.MUST_PASS_ALL 和“或” FilterList.Operator.MUST_PASS_ONE 关系
+		 */
+
+//		FilterList list = new FilterList(FilterList.Operator.MUST_PASS_ONE); //数据只要满足一组过滤器中的一个就可以
+//
+//		SingleColumnValueFilter filter1 = new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
+//
+//				CompareOperator.EQUAL,"wap".getBytes());
+//
+//		list.addFilter(filter1);
+//
+//		SingleColumnValueFilter filter2 = new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
+//
+//				CompareOperator.EQUAL,Bytes.toBytes("my other value"));
+//
+//		list.addFilter(filter2);
+//		importBuilder.setFilterList(list);
+
+//		//设置同步起始行和终止行key条件
+//		importBuilder.setStartRow(startRow);
+//		importBuilder.setEndRow(endRow);
+		//设置记录起始时间搓（>=）和截止时间搓(<),如果是基于时间范围的增量同步，则不需要指定下面两个参数
+//		importBuilder.setStartTimestamp(startTimestam);
+//		importBuilder.setEndTimestamp(endTimestamp);
+
 		/**
 		 * es相关配置
 		 */
-		importBuilder.setIndex("hbase2esfulldemo") //全局设置要目标elasticsearch索引名称
-					 .setIndexType("hbase2esfulldemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
+		importBuilder.setIndex("hbase2esdemo") //全局设置要目标elasticsearch索引名称
+				.setIndexType("hbase2esdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
 		importBuilder.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
-
 
 
 		//定时任务配置，
@@ -118,54 +160,19 @@ public class HBase2ESFullDemo {
 				System.out.println("throwException 1");
 			}
 		});
+		//hbase表中列名，由"列族:列名"组成
 //		//设置任务执行拦截器结束，可以添加多个
+
 //		//增量配置开始
-////		importBuilder.setNumberLastValueColumn("logId");//指定数字增量查询字段变量名称
-//		importBuilder.setDateLastValueColumn("logOpertime");//手动指定日期增量查询字段变量名称
+////		importBuilder.setNumberLastValueColumn("Info:id");//指定数字增量查询字段变量名称
+//		importBuilder.setDateLastValueColumn("Info:logOpertime");//手动指定日期增量查询字段变量名称
 //		importBuilder.setFromFirst(true);//任务重启时，重新开始采集数据，true 重新开始，false不重新开始，适合于每次全量导入数据的情况，如果是全量导入，可以先删除原来的索引数据
 //		importBuilder.setLastValueStorePath("hbase2esdemo_import");//记录上次采集的增量字段值的文件路径，作为下次增量（或者重启后）采集数据的起点，不同的任务这个路径要不一样
-		/**
-		 * 如果指定索引文档元数据字段为为文档_id,那么需要指定前缀meta:，如果是其他数据字段就不需要
-		 * **文档_id*
-		 *private String id;
-		 *    **文档对应索引类型信息*
-		 *private String type;
-		 *    **文档对应索引字段信息*
-		 *private Map<String, List<Object>> fields;
-		 * **文档对应版本信息*
-		 *private long version;
-		 *  **文档对应的索引名称*
-		 *private String index;
-		 *  **文档对应的高亮检索信息*
-		 *private Map<String, List<Object>> highlight;
-		 *     **文档对应的排序信息*
-		 *private Object[] sort;
-		 *     **文档对应的评分信息*
-		 *private Double score;
-		 *     **文档对应的父id*
-		 *private Object parent;
-		 *     **文档对应的路由信息*
-		 *private String routing;
-		 *     **文档对应的是否命中信息*
-		 *private boolean found;
-		 *     **文档对应的nested检索信息*
-		 *private Map<String, Object> nested;
-		 *     **文档对应的innerhits信息*
-		 *private Map<String, Map<String, InnerSearchHits>> innerHits;
-		 *     **文档对应的索引分片号*
-		 *private String shard;
-		 *     **文档对应的elasticsearch集群节点名称*
-		 *private String node;
-		 *    **文档对应的打分规则信息*
-		 *private Explanation explanation;
-		 *
-		 *private long seqNo;//"_index": "trace-2017.09.01",
-		 *private long primaryTerm;//"_index": "trace-2017.09.01",
-		 */
-//		importBuilder.setEsIdField("meta:rowkey");
-//		importBuilder.setLastValueType(ImportIncreamentConfig.TIMESTAMP_TYPE);//如果没有指定增量查询字段名称，则需要指定字段类型：ImportIncreamentConfig.NUMBER_TYPE 数字类型
-//		// 或者ImportIncreamentConfig.TIMESTAMP_TYPE 日期类型
-//		//设置增量查询的起始值lastvalue
+		//指定增量字段类型为日期类型，如果没有指定增量字段名称,则按照hbase记录时间戳进行timerange增量检索
+//		importBuilder.setLastValueType(ImportIncreamentConfig.TIMESTAMP_TYPE);
+		// ImportIncreamentConfig.NUMBER_TYPE 数字类型
+//		// ImportIncreamentConfig.TIMESTAMP_TYPE 日期类型
+		//设置增量查询的起始值时间起始时间
 //		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 //		try {
 //
@@ -175,8 +182,28 @@ public class HBase2ESFullDemo {
 //		catch (Exception e){
 //			e.printStackTrace();
 //		}
+//		//增量配置结束
 
-		//增量配置结束
+		// 设置Elasticsearch索引文档_id
+		/**
+		 * 如果指定rowkey为文档_id,那么需要指定前缀meta:，如果是其他数据字段就不需要
+		 * 例如：
+		 * meta:rowkey 行key byte[]
+		 * meta:timestamp  记录时间戳
+		 */
+//		importBuilder.setEsIdField("meta:rowkey");
+		// 设置自定义id生成机制
+		importBuilder.setEsIdGenerator(new EsIdGenerator(){
+
+			@Override
+			public Object genId(Context context) throws Exception {
+				Object id = context.getMetaValue("rowkey");
+				String agentId = BytesUtils.safeTrim(BytesUtils.toString((byte[]) id, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
+				return agentId;
+			}
+		});
+
+
 
 		//映射和转换配置开始
 //		/**
@@ -213,17 +240,19 @@ public class HBase2ESFullDemo {
 //					context.setDrop(true);
 //					return;
 //				}
-
+				// 直接获取行key，对应byte[]类型，自行提取和分析保存在其中的数据
 				byte[] rowKey = (byte[])context.getMetaValue("rowkey");
 				String agentId = BytesUtils.safeTrim(BytesUtils.toString(rowKey, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
 				context.addFieldValue("agentId",agentId);
 				long reverseStartTime = BytesUtils.bytesToLong(rowKey, HBaseTables.AGENT_NAME_MAX_LEN);
 				long startTime = TimeUtils.recoveryTimeMillis(reverseStartTime);
 				context.addFieldValue("startTime",new Date(startTime));
+				// 通过context.getValue方法获取hbase 列的原始值byte[],方法参数对应hbase表中列名，由"列族:列名"组成
 				byte[] serializedAgentInfo = (byte[]) context.getValue("Info:i");
 				byte[] serializedServerMetaData = (byte[]) context.getValue("Info:m");
 				byte[] serializedJvmInfo = (byte[]) context.getValue("Info:j");
-
+				// 通过context提供的一系列getXXXValue方法，从hbase列族中获取相应类型的数据：int,string,long,double,float,date
+//				String data = context.getStringValue("Info:i");
 				final AgentInfoBo.Builder agentInfoBoBuilder = createBuilderFromValue(serializedAgentInfo);
 				agentInfoBoBuilder.setAgentId(agentId);
 				agentInfoBoBuilder.setStartTime(startTime);
@@ -279,24 +308,6 @@ public class HBase2ESFullDemo {
 		});
 		//映射和转换配置结束
 
-		importBuilder.setEsIdGenerator(new EsIdGenerator(){
-
-			@Override
-			public Object genId(Context context) throws Exception {
-				ClientOptions clientOptions = context.getClientOptions();
-				ESField esIdField = clientOptions != null?clientOptions.getIdField():null;
-				if (esIdField != null) {
-					Object id = null;
-					if(!esIdField.isMeta())
-						id = context.getValue(esIdField.getField());
-					else
-						id = context.getMetaValue(esIdField.getField());
-					String agentId = BytesUtils.safeTrim(BytesUtils.toString((byte[]) id, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
-					return agentId;
-				}
-				return null;
-			}
-		});
 		/**
 		 * 一次、作业创建一个内置的线程池，实现多线程并行数据导入elasticsearch功能，作业完毕后关闭线程池
 		 */
@@ -317,6 +328,7 @@ public class HBase2ESFullDemo {
 		DataStream dataStream = importBuilder.builder();
 		dataStream.execute();//执行导入操作
 	}
+
 
 
 	private AgentInfoBo.Builder createBuilderFromValue(byte[] serializedAgentInfo) {

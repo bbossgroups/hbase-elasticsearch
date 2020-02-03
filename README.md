@@ -28,12 +28,21 @@ HBase 到elasticsearch数据同步
 
 # 导入maven坐标
 
+
 ```xml
 <dependency>
   <groupId>com.bbossgroups.plugins</groupId>
   <artifactId>bboss-elasticsearch-rest-hbase</artifactId>
   <version>6.0.0</version>
   <scope>compile</scope>
+</dependency>
+<!--
+hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本调整hbase shaded client的版本号
+-->
+<dependency>
+  <groupId>org.apache.hbase</groupId>
+  <artifactId>hbase-shaded-client</artifactId>
+  <version>2.2.3</version>
 </dependency>
 ```
 

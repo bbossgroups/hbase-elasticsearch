@@ -15,31 +15,31 @@ package org.frameworkset.elasticsearch.imp;
  * limitations under the License.
  */
 
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
 import org.frameworkset.tran.EsIdGenerator;
 import org.frameworkset.tran.context.Context;
 import org.frameworkset.tran.hbase.HBaseExportBuilder;
 import org.frameworkset.tran.schedule.CallInterceptor;
-import org.frameworkset.tran.schedule.ImportIncreamentConfig;
 import org.frameworkset.tran.schedule.TaskContext;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * <p>Description: 将保存在hbase中pinpoint AgentInfo信息根据记录时间戳增量同步到elasticsearch中
- * hbase表中列名，由"列族:列名"组成
- * </p>
- * <p>hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本调整hbase shaded client的版本号</p>
+ * <p>Description: 将保存在hbase中pinpoint AgentInfo信息定时全量同步到elasticsearch中</p>
+ * <p>可以指定FilterList或者Filter作为同步检索条件</p>
+ * hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本调整hbase shaded client的版本号
  * <p>Copyright (c) 2018</p>
  * @Date 2019/1/11 14:39
  * @author biaoping.yin
  * @version 1.0
  */
-public class HBase2ESScrollTimestampDemo {
+public class HBase2ESFullDemoWithFilter {
 	public static void main(String[] args){
-		HBase2ESScrollTimestampDemo esDemo = new HBase2ESScrollTimestampDemo();
+		HBase2ESFullDemoWithFilter esDemo = new HBase2ESFullDemoWithFilter();
 		esDemo.scheduleScrollRefactorImportData();
 		System.out.println("complete.");
 	}
@@ -51,8 +51,8 @@ public class HBase2ESScrollTimestampDemo {
 		importBuilder.setBatchSize(1000) //设置批量写入目标Elasticsearch记录数
 				.setFetchSize(10000); //设置批量从源Hbase中拉取的记录数,HBase-0.98 默认值为为 100，HBase-1.2 默认值为 2147483647，即 Integer.MAX_VALUE。Scan.next() 的一次 RPC 请求 fetch 的记录条数。配置建议：这个参数与下面的setMaxResultSize配合使用，在网络状况良好的情况下，自定义设置不宜太小， 可以直接采用默认值，不配置。
 
-//		importBuilder.setHbaseBatch(100) //配置获取的列数，假如表有两个列簇 cf，info，每个列簇5个列。这样每行可能有10列了，setBatch() 可以控制每次获取的最大列数，进一步从列级别控制流量。配置建议：当列数很多，数据量大时考虑配置此参数，例如100列每次只获取50列。一般情况可以默认值（-1 不受限）
-//				.setMaxResultSize(10000l);//客户端缓存的最大字节数，HBase-0.98 无该项配置，HBase-1.2 默认值为 210241024，即 2M。Scan.next() 的一次 RPC 请求 fetch 的数据量大小，目前 HBase-1.2 在 Caching 为默认值(Integer Max)的时候，实际使用这个参数控制 RPC 次数和流量。配置建议：如果网络状况较好（万兆网卡），scan 的数据量非常大，可以将这个值配置高一点。如果配置过高：则可能 loadCache 速度比较慢，导致 scan timeout 异常
+//		importBuilder.setHbaseBatch(100); //配置获取的列数，假如表有两个列簇 cf，info，每个列簇5个列。这样每行可能有10列了，setBatch() 可以控制每次获取的最大列数，进一步从列级别控制流量。配置建议：当列数很多，数据量大时考虑配置此参数，例如100列每次只获取50列。一般情况可以默认值（-1 不受限）
+		importBuilder.setMaxResultSize(10000l);//客户端缓存的最大字节数，HBase-0.98 无该项配置，HBase-1.2 默认值为 210241024，即 2M。Scan.next() 的一次 RPC 请求 fetch 的数据量大小，目前 HBase-1.2 在 Caching 为默认值(Integer Max)的时候，实际使用这个参数控制 RPC 次数和流量。配置建议：如果网络状况较好（万兆网卡），scan 的数据量非常大，可以将这个值配置高一点。如果配置过高：则可能 loadCache 速度比较慢，导致 scan timeout 异常
 		// 参考文档：https://blog.csdn.net/kangkangwanwan/article/details/89332536
 
 
@@ -75,38 +75,37 @@ public class HBase2ESScrollTimestampDemo {
 				.setHbaseClientWarnMultsRejects(1000)
 				.setHbaseClientPreStartAllCoreThreads(true)
 				.setHbaseClientThreadDaemon(true)
-
 				.setHbaseTable("AgentInfo") //指定需要同步数据的hbase表名称
-				;
+		;
+
 		//FilterList和filter二选一，只需要设置一种
-//		/**
-//		 * 设置hbase检索filter
-//		 */
-//		SingleColumnValueFilter scvf= new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
-//
-//				CompareOperator.EQUAL,"wap".getBytes());
-//
-//		scvf.setFilterIfMissing(true); //默认为false， 没有此列的数据也会返回 ，为true则只返回name=lisi的数据
-//
-//		importBuilder.setFilter(scvf);
+		/**
+		 * 设置hbase检索filter
+		 */
+		SingleColumnValueFilter scvf= new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
+
+				CompareFilter.CompareOp.EQUAL,"wap".getBytes());
+
+		scvf.setFilterIfMissing(true); //默认为false， 没有此列的数据也会返回 ，为true则只返回name=lisi的数据
+
+		importBuilder.setFilter(scvf);
 
 		/**
 		 * 设置hbase组合条件FilterList
 		 * FilterList 代表一个过滤器链，它可以包含一组即将应用于目标数据集的过滤器，过滤器间具有“与” FilterList.Operator.MUST_PASS_ALL 和“或” FilterList.Operator.MUST_PASS_ONE 关系
 		 */
-
+//
 //		FilterList list = new FilterList(FilterList.Operator.MUST_PASS_ONE); //数据只要满足一组过滤器中的一个就可以
 //
 //		SingleColumnValueFilter filter1 = new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
 //
 //				CompareOperator.EQUAL,"wap".getBytes());
-//
+//		filter1.setFilterIfMissing(false);
 //		list.addFilter(filter1);
 //
 //		SingleColumnValueFilter filter2 = new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
-//
 //				CompareOperator.EQUAL,Bytes.toBytes("my other value"));
-//
+//		filter2.setFilterIfMissing(false);
 //		list.addFilter(filter2);
 //		importBuilder.setFilterList(list);
 
@@ -121,7 +120,7 @@ public class HBase2ESScrollTimestampDemo {
 		 * es相关配置
 		 */
 		importBuilder.setIndex("hbase2esdemo") //全局设置要目标elasticsearch索引名称
-					 .setIndexType("hbase2esdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
+				.setIndexType("hbase2esdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
 		importBuilder.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
 
 
@@ -166,26 +165,27 @@ public class HBase2ESScrollTimestampDemo {
 		});
 		//hbase表中列名，由"列族:列名"组成
 //		//设置任务执行拦截器结束，可以添加多个
+		
 //		//增量配置开始
 ////		importBuilder.setNumberLastValueColumn("Info:id");//指定数字增量查询字段变量名称
 //		importBuilder.setDateLastValueColumn("Info:logOpertime");//手动指定日期增量查询字段变量名称
 //		importBuilder.setFromFirst(true);//任务重启时，重新开始采集数据，true 重新开始，false不重新开始，适合于每次全量导入数据的情况，如果是全量导入，可以先删除原来的索引数据
 //		importBuilder.setLastValueStorePath("hbase2esdemo_import");//记录上次采集的增量字段值的文件路径，作为下次增量（或者重启后）采集数据的起点，不同的任务这个路径要不一样
 		//指定增量字段类型为日期类型，如果没有指定增量字段名称,则按照hbase记录时间戳进行timerange增量检索
-		importBuilder.setLastValueType(ImportIncreamentConfig.TIMESTAMP_TYPE);
+//		importBuilder.setLastValueType(ImportIncreamentConfig.TIMESTAMP_TYPE);
 		// ImportIncreamentConfig.NUMBER_TYPE 数字类型
 //		// ImportIncreamentConfig.TIMESTAMP_TYPE 日期类型
 		//设置增量查询的起始值时间起始时间
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-		try {
-
-			Date date = format.parse("2000-01-01");
-			importBuilder.setLastValue(date);
-		}
-		catch (Exception e){
-			e.printStackTrace();
-		}
-		//增量配置结束
+//		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+//		try {
+//
+//			Date date = format.parse("2000-01-01");
+//			importBuilder.setLastValue(date);
+//		}
+//		catch (Exception e){
+//			e.printStackTrace();
+//		}
+//		//增量配置结束
 
 		// 设置Elasticsearch索引文档_id
 		/**
@@ -200,9 +200,9 @@ public class HBase2ESScrollTimestampDemo {
 
 			@Override
 			public Object genId(Context context) throws Exception {
-					Object id = context.getMetaValue("rowkey");
-					String agentId = BytesUtils.safeTrim(BytesUtils.toString((byte[]) id, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
-					return agentId;
+				Object id = context.getMetaValue("rowkey");
+				String agentId = BytesUtils.safeTrim(BytesUtils.toString((byte[]) id, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
+				return agentId;
 			}
 		});
 
@@ -325,12 +325,14 @@ public class HBase2ESScrollTimestampDemo {
 		importBuilder.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false
 		importBuilder.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认false
 
+
 		/**
 		 * 执行es数据导入数据库表操作
 		 */
 		DataStream dataStream = importBuilder.builder();
 		dataStream.execute();//执行导入操作
 	}
+
 
 
 	private AgentInfoBo.Builder createBuilderFromValue(byte[] serializedAgentInfo) {
