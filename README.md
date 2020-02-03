@@ -15,6 +15,10 @@ Spring booter 1.x,2.x,+
 org.frameworkset.elasticsearch.imp.HBase2ESFullDemo
 ## jdk timer定时增量同步
 org.frameworkset.elasticsearch.imp.HBase2ESScrollTimestampDemo
+## jdk timer定时带条件同步
+org.frameworkset.elasticsearch.imp.HBase2ESFullDemoWithFilter
+
+
 ## quartz定时全量同步
 org.frameworkset.elasticsearch.imp.QuartzHBase2ESImportTask
 ## 支持的数据库：
@@ -45,6 +49,9 @@ hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本
   <version>2.2.3</version>
 </dependency>
 ```
+本案例基于hbase 1.3.0版本开发，所以选择的是1.2.4的客户端，具体的client版本号可以根据hbase版本自行选择：
+
+https://search.maven.org/artifact/org.apache.hbase/hbase-shaded-client
 
 # 构建部署
 ## 准备工作
