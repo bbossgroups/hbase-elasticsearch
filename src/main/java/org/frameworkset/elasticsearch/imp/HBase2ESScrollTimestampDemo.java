@@ -18,11 +18,14 @@ package org.frameworkset.elasticsearch.imp;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
 import org.frameworkset.tran.EsIdGenerator;
+import org.frameworkset.tran.ExportResultHandler;
 import org.frameworkset.tran.context.Context;
 import org.frameworkset.tran.hbase.HBaseExportBuilder;
-import org.frameworkset.tran.schedule.CallInterceptor;
+import org.frameworkset.tran.metrics.TaskMetrics;
 import org.frameworkset.tran.schedule.ImportIncreamentConfig;
-import org.frameworkset.tran.schedule.TaskContext;
+import org.frameworkset.tran.task.TaskCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,6 +41,7 @@ import java.util.Date;
  * @version 1.0
  */
 public class HBase2ESScrollTimestampDemo {
+	private static Logger logger = LoggerFactory.getLogger(HBase2ESScrollTimestampDemo.class);
 	public static void main(String[] args){
 		HBase2ESScrollTimestampDemo esDemo = new HBase2ESScrollTimestampDemo();
 		esDemo.scheduleScrollRefactorImportData();
@@ -51,7 +55,7 @@ public class HBase2ESScrollTimestampDemo {
 		importBuilder.setBatchSize(1000) //设置批量写入目标Elasticsearch记录数
 				.setFetchSize(10000); //设置批量从源Hbase中拉取的记录数,HBase-0.98 默认值为为 100，HBase-1.2 默认值为 2147483647，即 Integer.MAX_VALUE。Scan.next() 的一次 RPC 请求 fetch 的记录条数。配置建议：这个参数与下面的setMaxResultSize配合使用，在网络状况良好的情况下，自定义设置不宜太小， 可以直接采用默认值，不配置。
 
-//		importBuilder.setHbaseBatch(100) //配置获取的列数，假如表有两个列簇 cf，info，每个列簇5个列。这样每行可能有10列了，setBatch() 可以控制每次获取的最大列数，进一步从列级别控制流量。配置建议：当列数很多，数据量大时考虑配置此参数，例如100列每次只获取50列。一般情况可以默认值（-1 不受限）
+//		importBuilder.setHbaseBatch(100) //配置获取的列数，假如表有两个列簇 cf，info，每个列簇5个列。这样每行可能有10列了，setBatch() 可以控制每次获取的最大列数，进一步从列级别控制流量。配置建议：当列数很多，数据量大时考虑配置此参数，例如100列每次只获取50列。一般情况可以默认值（-1 不受限），如果设置了scan filter也不需要设置
 //				.setMaxResultSize(10000l);//客户端缓存的最大字节数，HBase-0.98 无该项配置，HBase-1.2 默认值为 210241024，即 2M。Scan.next() 的一次 RPC 请求 fetch 的数据量大小，目前 HBase-1.2 在 Caching 为默认值(Integer Max)的时候，实际使用这个参数控制 RPC 次数和流量。配置建议：如果网络状况较好（万兆网卡），scan 的数据量非常大，可以将这个值配置高一点。如果配置过高：则可能 loadCache 速度比较慢，导致 scan timeout 异常
 		// 参考文档：https://blog.csdn.net/kangkangwanwan/article/details/89332536
 
@@ -78,6 +82,18 @@ public class HBase2ESScrollTimestampDemo {
 
 				.setHbaseTable("AgentInfo") //指定需要同步数据的hbase表名称
 				;
+
+		/**
+		 * es相关配置
+		 * 可以通过addElasticsearchProperty方法添加Elasticsearch客户端配置，
+		 * 也可以直接读取application.properties文件中设置的es配置
+		 */
+//		importBuilder.addElasticsearchProperty("elasticsearch.rest.hostNames","192.168.137.1:9200");//设置es服务器地址，更多配置参数文档：https://esdoc.bbossgroups.com/#/mongodb-elasticsearch?id=_5242-elasticsearch%e5%8f%82%e6%95%b0%e9%85%8d%e7%bd%ae
+		importBuilder.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
+
+		importBuilder.setIndex("hbase2esdemo") //全局设置要目标elasticsearch索引名称
+				.setIndexType("hbase2esdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
+
 		//FilterList和filter二选一，只需要设置一种
 //		/**
 //		 * 设置hbase检索filter
@@ -117,12 +133,6 @@ public class HBase2ESScrollTimestampDemo {
 //		importBuilder.setStartTimestamp(startTimestam);
 //		importBuilder.setEndTimestamp(endTimestamp);
 
-		/**
-		 * es相关配置
-		 */
-		importBuilder.setIndex("hbase2esdemo") //全局设置要目标elasticsearch索引名称
-					 .setIndexType("hbase2esdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
-		importBuilder.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
 
 
 		//定时任务配置，
@@ -132,38 +142,6 @@ public class HBase2ESScrollTimestampDemo {
 				.setPeriod(10000L); //每隔period毫秒执行，如果不设置，只执行一次
 		//定时任务配置结束
 
-		//设置任务执行拦截器，可以添加多个
-		importBuilder.addCallInterceptor(new CallInterceptor() {
-			@Override
-			public void preCall(TaskContext taskContext) {
-				System.out.println("preCall");
-			}
-
-			@Override
-			public void afterCall(TaskContext taskContext) {
-				System.out.println("afterCall");
-			}
-
-			@Override
-			public void throwException(TaskContext taskContext, Exception e) {
-				System.out.println("throwException");
-			}
-		}).addCallInterceptor(new CallInterceptor() {
-			@Override
-			public void preCall(TaskContext taskContext) {
-				System.out.println("preCall 1");
-			}
-
-			@Override
-			public void afterCall(TaskContext taskContext) {
-				System.out.println("afterCall 1");
-			}
-
-			@Override
-			public void throwException(TaskContext taskContext, Exception e) {
-				System.out.println("throwException 1");
-			}
-		});
 		//hbase表中列名，由"列族:列名"组成
 //		//设置任务执行拦截器结束，可以添加多个
 //		//增量配置开始
@@ -187,6 +165,40 @@ public class HBase2ESScrollTimestampDemo {
 		}
 		//增量配置结束
 
+//		//设置任务执行拦截器，可以添加多个
+//		importBuilder.addCallInterceptor(new CallInterceptor() {
+//			@Override
+//			public void preCall(TaskContext taskContext) {
+//				System.out.println("preCall");
+//			}
+//
+//			@Override
+//			public void afterCall(TaskContext taskContext) {
+//				System.out.println("afterCall");
+//			}
+//
+//			@Override
+//			public void throwException(TaskContext taskContext, Exception e) {
+//				System.out.println("throwException");
+//			}
+//		}).addCallInterceptor(new CallInterceptor() {
+//			@Override
+//			public void preCall(TaskContext taskContext) {
+//				System.out.println("preCall 1");
+//			}
+//
+//			@Override
+//			public void afterCall(TaskContext taskContext) {
+//				System.out.println("afterCall 1");
+//			}
+//
+//			@Override
+//			public void throwException(TaskContext taskContext, Exception e) {
+//				System.out.println("throwException 1");
+//			}
+//		});
+
+
 		// 设置Elasticsearch索引文档_id
 		/**
 		 * 如果指定rowkey为文档_id,那么需要指定前缀meta:，如果是其他数据字段就不需要
@@ -196,6 +208,9 @@ public class HBase2ESScrollTimestampDemo {
 		 */
 //		importBuilder.setEsIdField("meta:rowkey");
 		// 设置自定义id生成机制
+		//如果指定EsIdGenerator，则根据下面的方法生成文档id，
+		// 否则根据setEsIdField方法设置的字段值作为文档id，
+		// 如果默认没有配置EsIdField和如果指定EsIdGenerator，则由es自动生成文档id
 		importBuilder.setEsIdGenerator(new EsIdGenerator(){
 
 			@Override
@@ -233,7 +248,7 @@ public class HBase2ESScrollTimestampDemo {
 		importBuilder.addFieldValue("author","作者");
 
 		/**
-		 * 重新设置es数据结构
+		 * 设置es数据结构
 		 */
 		importBuilder.setDataRefactor(new DataRefactor() {
 			public void refactor(Context context) throws Exception  {
@@ -243,6 +258,10 @@ public class HBase2ESScrollTimestampDemo {
 //					context.setDrop(true);
 //					return;
 //				}
+				//获取原始的hbase记录Result对象
+//				HBaseRecord hBaseRecord = (HBaseRecord) context.getRecord();
+//				Result result = (Result) hBaseRecord.getData();
+
 				// 直接获取行key，对应byte[]类型，自行提取和分析保存在其中的数据
 				byte[] rowKey = (byte[])context.getMetaValue("rowkey");
 				String agentId = BytesUtils.safeTrim(BytesUtils.toString(rowKey, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
@@ -272,6 +291,7 @@ public class HBase2ESScrollTimestampDemo {
 				context.addFieldValue("title","解放");
 				context.addFieldValue("subtitle","小康");
 
+
 //				context.addIgnoreFieldMapping("title");
 				//上述三个属性已经放置到docInfo中，如果无需再放置到索引文档中，可以忽略掉这些属性
 //				context.addIgnoreFieldMapping("author");
@@ -282,7 +302,7 @@ public class HBase2ESScrollTimestampDemo {
 //				/**
 //				 * 获取ip对应的运营商和区域信息
 //				 */
-//				Map ipInfo = (Map)context.getValue("ipInfo");
+//				IpInfo ipInfo = context.getIpInfo("Info:agentIp");
 //				if(ipInfo != null)
 //					context.addFieldValue("ipinfo", SimpleStringUtil.object2json(ipInfo));
 //				else{
@@ -312,7 +332,7 @@ public class HBase2ESScrollTimestampDemo {
 		//映射和转换配置结束
 
 		/**
-		 * 一次、作业创建一个内置的线程池，实现多线程并行数据导入elasticsearch功能，作业完毕后关闭线程池
+		 * 作业创建一个内置的线程池，实现多线程并行数据导入elasticsearch功能
 		 */
 		importBuilder.setParallel(true);//设置为多线程并行批量导入,false串行
 		importBuilder.setQueue(10);//设置批量导入线程池等待队列长度
@@ -321,10 +341,37 @@ public class HBase2ESScrollTimestampDemo {
 		importBuilder.setAsyn(false);//true 异步方式执行，不等待所有导入作业任务结束，方法快速返回；false（默认值） 同步方式执行，等待所有导入作业任务结束，所有作业结束后方法才返回
 //		importBuilder.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false，不打印响应报文将大大提升性能，只有在调试需要的时候才打开，log日志级别同时要设置为INFO
 //		importBuilder.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认true，如果不需要响应报文将大大提升处理速度
-		importBuilder.setPrintTaskLog(true);
+		importBuilder.setPrintTaskLog(true); //可选项，true 打印任务执行日志（耗时，处理记录数） false 不打印，默认值false
 		importBuilder.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false
 		importBuilder.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认false
 
+		/**
+		 * 设置任务执行情况回调接口
+		 */
+		importBuilder.setExportResultHandler(new ExportResultHandler<String,String>() {
+			@Override
+			public void success(TaskCommand<String,String> taskCommand, String result) {
+				TaskMetrics taskMetrics = taskCommand.getTaskMetrics();
+				logger.info(taskMetrics.toString());
+			}
+
+			@Override
+			public void error(TaskCommand<String,String> taskCommand, String result) {
+				TaskMetrics taskMetrics = taskCommand.getTaskMetrics();
+				logger.info(taskMetrics.toString());
+			}
+
+			@Override
+			public void exception(TaskCommand<String,String> taskCommand, Exception exception) {
+				TaskMetrics taskMetrics = taskCommand.getTaskMetrics();
+				logger.info(taskMetrics.toString());
+			}
+
+			@Override
+			public int getMaxRetry() {
+				return 0;
+			}
+		});
 		/**
 		 * 执行es数据导入数据库表操作
 		 */
