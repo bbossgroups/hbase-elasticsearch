@@ -31,7 +31,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * <p>Description: 将保存在hbase中pinpoint AgentInfo信息根据记录时间戳增量同步到elasticsearch中
+ * <p>Description: hbase 2.2.3版本测试用例，将保存在hbase中pinpoint AgentInfo信息根据记录时间戳增量同步到elasticsearch中
  * hbase表中列名，由"列族:列名"组成
  * </p>
  * <p>hbase shaded client的版本号与hbase的版本相关，请根据hbase的版本调整hbase shaded client的版本号</p>

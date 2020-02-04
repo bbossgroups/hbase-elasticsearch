@@ -14,6 +14,8 @@ Spring booter 1.x,2.x,+
 org.frameworkset.elasticsearch.imp.HBase2ESFullDemo
 ## jdk timer定时增量同步
 org.frameworkset.elasticsearch.imp.HBase2ESScrollTimestampDemo
+## jdk timer定时增量同步（简化demo，hbase1.x,hbase2.x都可以跑）
+org.frameworkset.elasticsearch.imp.HBase2ESScrollTimestampDemo223
 ## jdk timer定时带条件同步
 org.frameworkset.elasticsearch.imp.HBase2ESFullDemoWithFilter
 ## quartz定时全量同步
