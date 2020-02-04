@@ -34,7 +34,7 @@ HBase 到elasticsearch数据同步
 <dependency>
   <groupId>com.bbossgroups.plugins</groupId>
   <artifactId>bboss-elasticsearch-rest-hbase</artifactId>
-  <version>6.0.0</version>
+  <version>6.0.1</version>
   <scope>compile</scope>
 </dependency>
 <!--
