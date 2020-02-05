@@ -40,9 +40,8 @@ import java.util.Map;
  */
 public class HBaseHelperTest {
 	@Test
-	public void testPutData(){
+	public void testPutDatas(){
 		Map<String,String> properties = new HashMap<String, String>();
-
 		properties.put("hbase.zookeeper.quorum","192.168.137.133");
 		properties.put("hbase.zookeeper.property.clientPort","2183");
 		properties.put("zookeeper.znode.parent","/hbase");
@@ -59,14 +58,12 @@ public class HBaseHelperTest {
 		 */
 		properties.put("hbase.client.async.enable","true");
 		properties.put("hbase.client.async.in.queuesize","10000");
-
 		HBaseHelper.buildHBaseClient(properties,100,100,0L,1000l,1000,true,true,false);
 		HbaseTemplate2 hbaseTemplate2 = HBaseHelper.getHbaseTemplate2();
 		byte[] CF = Bytes.toBytes("Info");
 		byte[] C_I = Bytes.toBytes("i");
 		byte[] C_j = Bytes.toBytes("j");
 		byte[] C_m = Bytes.toBytes("m");
-
 		final List<Put> datas = new ArrayList<>();
 		 for(int i= 0; i < 100; i ++){
 		 	 long timestamp = System.currentTimeMillis() ;
@@ -77,9 +74,6 @@ public class HBaseHelperTest {
 			 put.addColumn(CF, C_m,timestamp, Bytes.toBytes( "asdfasfd_"+i));
 			 datas.add(put);
 		 }
-
-
-
 		TableName traceTableName = TableName.valueOf("AgentInfo");
 		hbaseTemplate2.asyncPut(traceTableName,datas);
 	}

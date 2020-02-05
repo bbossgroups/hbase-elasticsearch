@@ -16,6 +16,7 @@ package org.frameworkset.elasticsearch.imp;
  */
 
 import org.apache.hadoop.hbase.util.Bytes;
+import org.frameworkset.runtime.CommonLauncher;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
 import org.frameworkset.tran.ExportResultHandler;
@@ -63,9 +64,12 @@ public class HBase2ESScrollTimestampDemo223 {
 		/**
 		 * hbase参数配置
 		 */
-		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
-				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
-				.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
+		String hbaseZookeeperQuorum = CommonLauncher.getProperty("hbase.zookeeper.quorum","192.168.137.133");//同时指定了默认值
+		String hbaseZookeeperPort = CommonLauncher.getProperty("hbase.zookeeper.property.clientPort","2183");//同时指定了默认值
+		String zookeeperZnodeParent = CommonLauncher.getProperty("zookeeper.znode.parent","/hbase");//同时指定了默认值
+		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum",hbaseZookeeperQuorum)  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+				.addHbaseClientProperty("hbase.zookeeper.property.clientPort",hbaseZookeeperPort)
+				.addHbaseClientProperty("zookeeper.znode.parent",zookeeperZnodeParent)
 				.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
 				.addHbaseClientProperty("hbase.rpc.timeout","10000")
 				.addHbaseClientProperty("hbase.client.operation.timeout","10000")
@@ -86,7 +90,7 @@ public class HBase2ESScrollTimestampDemo223 {
 		/**
 		 * es相关配置
 		 * 可以通过addElasticsearchProperty方法添加Elasticsearch客户端配置，
-		 * 也可以直接读取application.properties文件中设置的es配置
+		 * 也可以直接读取application.properties文件中设置的es配置,两种方式都可以，案例中采用application.properties的方式
 		 */
 //		importBuilder.addElasticsearchProperty("elasticsearch.rest.hostNames","192.168.137.1:9200");//设置es服务器地址，更多配置参数文档：https://esdoc.bbossgroups.com/#/mongodb-elasticsearch?id=_5242-elasticsearch%e5%8f%82%e6%95%b0%e9%85%8d%e7%bd%ae
 		importBuilder.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
@@ -276,15 +280,9 @@ public class HBase2ESScrollTimestampDemo223 {
 				context.addFieldValue("serializedServerMetaData",serializedServerMetaData);
 				context.addFieldValue("serializedJvmInfo",serializedJvmInfo);
 				context.addFieldValue("subtitle","小康");
+				context.addFieldValue("collectTime",new Date());
 
 
-//				context.addIgnoreFieldMapping("title");
-				//上述三个属性已经放置到docInfo中，如果无需再放置到索引文档中，可以忽略掉这些属性
-//				context.addIgnoreFieldMapping("author");
-
-//				//修改字段名称title为新名称newTitle，并且修改字段的值
-//				context.newName2ndData("title","newTitle",(String)context.getValue("title")+" append new Value");
-				context.addIgnoreFieldMapping("subtitle");
 //				/**
 //				 * 获取ip对应的运营商和区域信息
 //				 */
@@ -299,20 +297,6 @@ public class HBase2ESScrollTimestampDemo223 {
 //				context.addFieldValue("logOpertime",optime);
 //				context.addFieldValue("collecttime",new Date());
 
-				/**
-				 //关联查询数据,单值查询
-				 Map headdata = SQLExecutor.queryObjectWithDBName(Map.class,context.getEsjdbc().getDbConfig().getDbName(),
-				 "select * from head where billid = ? and othercondition= ?",
-				 context.getIntegerValue("billid"),"otherconditionvalue");//多个条件用逗号分隔追加
-				 //将headdata中的数据,调用addFieldValue方法将数据加入当前es文档，具体如何构建文档数据结构根据需求定
-				 context.addFieldValue("headdata",headdata);
-				 //关联查询数据,多值查询
-				 List<Map> facedatas = SQLExecutor.queryListWithDBName(Map.class,context.getEsjdbc().getDbConfig().getDbName(),
-				 "select * from facedata where billid = ?",
-				 context.getIntegerValue("billid"));
-				 //将facedatas中的数据,调用addFieldValue方法将数据加入当前es文档，具体如何构建文档数据结构根据需求定
-				 context.addFieldValue("facedatas",facedatas);
-				 */
 			}
 		});
 		//映射和转换配置结束
