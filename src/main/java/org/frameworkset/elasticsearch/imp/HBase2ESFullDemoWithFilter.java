@@ -167,8 +167,7 @@ public class HBase2ESFullDemoWithFilter {
 //		//设置任务执行拦截器结束，可以添加多个
 		
 //		//增量配置开始
-////		importBuilder.setNumberLastValueColumn("Info:id");//指定数字增量查询字段变量名称
-//		importBuilder.setDateLastValueColumn("Info:logOpertime");//手动指定日期增量查询字段变量名称
+////		importBuilder.setLastValueColumn("Info:id");//指定数字增量查询字段变量名称
 //		importBuilder.setFromFirst(true);//任务重启时，重新开始采集数据，true 重新开始，false不重新开始，适合于每次全量导入数据的情况，如果是全量导入，可以先删除原来的索引数据
 //		importBuilder.setLastValueStorePath("hbase2esdemo_import");//记录上次采集的增量字段值的文件路径，作为下次增量（或者重启后）采集数据的起点，不同的任务这个路径要不一样
 		//指定增量字段类型为日期类型，如果没有指定增量字段名称,则按照hbase记录时间戳进行timerange增量检索
