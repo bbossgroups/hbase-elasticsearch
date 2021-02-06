@@ -63,8 +63,10 @@ public class HBase2ESScrollTimestampDemo {
 		/**
 		 * hbase参数配置
 		 */
-		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
-				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
+//		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+//				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
+		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","10.13.11.12")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2185")
 				.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
 				.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
 				.addHbaseClientProperty("hbase.rpc.timeout","10000")
@@ -156,7 +158,7 @@ public class HBase2ESScrollTimestampDemo {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		try {
 
-			Date date = format.parse("2000-01-01");
+			Date date = format.parse("2010-11-01");
 			importBuilder.setLastValue(date);
 		}
 		catch (Exception e){
