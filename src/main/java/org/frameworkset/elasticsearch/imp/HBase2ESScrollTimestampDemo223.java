@@ -15,6 +15,7 @@ package org.frameworkset.elasticsearch.imp;
  * limitations under the License.
  */
 
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.frameworkset.runtime.CommonLauncher;
 import org.frameworkset.tran.DataRefactor;
@@ -262,8 +263,7 @@ public class HBase2ESScrollTimestampDemo223 {
 //					return;
 //				}
 				//获取原始的hbase记录Result对象
-//				HBaseRecord hBaseRecord = (HBaseRecord) context.getRecord();
-//				Result result = (Result) hBaseRecord.getData();
+				Result result = (Result) context.getRecord();
 
 				// 直接获取行key，对应byte[]类型，自行提取和分析保存在其中的数据
 				String agentId = Bytes.toString((byte[])context.getMetaValue("rowkey"));

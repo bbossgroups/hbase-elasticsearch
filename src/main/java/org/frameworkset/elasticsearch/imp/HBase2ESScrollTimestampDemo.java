@@ -15,6 +15,7 @@ package org.frameworkset.elasticsearch.imp;
  * limitations under the License.
  */
 
+import org.apache.hadoop.hbase.client.Result;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
 import org.frameworkset.tran.EsIdGenerator;
@@ -260,8 +261,7 @@ public class HBase2ESScrollTimestampDemo {
 //					return;
 //				}
 				//获取原始的hbase记录Result对象
-//				HBaseRecord hBaseRecord = (HBaseRecord) context.getRecord();
-//				Result result = (Result) hBaseRecord.getData();
+				Result result = (Result) context.getRecord();
 
 				// 直接获取行key，对应byte[]类型，自行提取和分析保存在其中的数据
 				byte[] rowKey = (byte[])context.getMetaValue("rowkey");
