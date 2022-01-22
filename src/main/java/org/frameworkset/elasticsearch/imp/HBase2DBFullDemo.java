@@ -139,7 +139,7 @@ public class HBase2DBFullDemo {
 				.setSqlFilepath("sql-dbtran.xml")
 
 				.setTargetDbName("testds")//指定目标数据库，在application.properties文件中配置
-				.setTargetDbDriver("com.mysql.jdbc.Driver") //数据库驱动程序，必须导入相关数据库的驱动jar包
+				.setTargetDbDriver("com.mysql.cj.jdbc.Driver") //数据库驱动程序，必须导入相关数据库的驱动jar包
 				.setTargetDbUrl("jdbc:mysql://localhost:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false")
 				.setTargetDbUser("root")
 				.setTargetDbPassword("123456")
