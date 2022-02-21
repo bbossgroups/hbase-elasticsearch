@@ -22,8 +22,9 @@ import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
 import org.frameworkset.tran.context.Context;
 import org.frameworkset.tran.hbase.input.fileftp.HBase2FileFtpImportBuilder;
-import org.frameworkset.tran.output.fileftp.FileFtpOupputConfig;
+import org.frameworkset.tran.output.fileftp.FileOupputConfig;
 import org.frameworkset.tran.output.fileftp.FilenameGenerator;
+import org.frameworkset.tran.output.ftp.FtpOutConfig;
 import org.frameworkset.tran.schedule.CallInterceptor;
 import org.frameworkset.tran.schedule.TaskContext;
 import org.frameworkset.tran.util.RecordGenerator;
@@ -45,22 +46,23 @@ public class HBase2FileFtpBatchSplitFileDemo {
 		HBase2FileFtpImportBuilder importBuilder = new HBase2FileFtpImportBuilder();
 		importBuilder.setBatchSize(500).setFetchSize(1000);
 		String ftpIp = CommonLauncher.getProperty("ftpIP","10.13.6.127");//同时指定了默认值
-		FileFtpOupputConfig fileFtpOupputConfig = new FileFtpOupputConfig();
+		FileOupputConfig fileFtpOupputConfig = new FileOupputConfig();
+		FtpOutConfig ftpOutConfig = new FtpOutConfig();
+		ftpOutConfig.setFtpIP(ftpIp);
 
-		fileFtpOupputConfig.setFtpIP(ftpIp);
+		ftpOutConfig.setFtpPort(5322);
+//		ftpOutConfig.addHostKeyVerifier("2a:da:5a:6a:cf:7d:65:e5:ac:ff:d3:73:7f:2c:55:c9");
+		ftpOutConfig.setFtpUser("ecs");
+		ftpOutConfig.setFtpPassword("ecs@123");
+		ftpOutConfig.setRemoteFileDir("/home/ecs/failLog");
+		ftpOutConfig.setKeepAliveTimeout(100000);
+		ftpOutConfig.setTransferEmptyFiles(true);
+		ftpOutConfig.setFailedFileResendInterval(-1);
+		ftpOutConfig.setBackupSuccessFiles(true);
+
+		ftpOutConfig.setSuccessFilesCleanInterval(5000);
+		ftpOutConfig.setFileLiveTime(86400);//设置上传成功文件备份保留时间，默认2天
 		fileFtpOupputConfig.setFileDir("D:\\workdir");
-		fileFtpOupputConfig.setFtpPort(5322);
-		fileFtpOupputConfig.addHostKeyVerifier("2a:da:5a:6a:cf:7d:65:e5:ac:ff:d3:73:7f:2c:55:c9");
-		fileFtpOupputConfig.setFtpUser("ecs");
-		fileFtpOupputConfig.setFtpPassword("ecs@123");
-		fileFtpOupputConfig.setRemoteFileDir("/home/ecs/failLog");
-		fileFtpOupputConfig.setKeepAliveTimeout(100000);
-		fileFtpOupputConfig.setTransferEmptyFiles(true);
-		fileFtpOupputConfig.setFailedFileResendInterval(-1);
-		fileFtpOupputConfig.setBackupSuccessFiles(true);
-
-		fileFtpOupputConfig.setSuccessFilesCleanInterval(5000);
-		fileFtpOupputConfig.setFileLiveTime(86400);//设置上传成功文件备份保留时间，默认2天
 		fileFtpOupputConfig.setMaxFileRecordSize(20);//每千条记录生成一个文件
 		fileFtpOupputConfig.setDisableftp(false);//false 启用sftp/ftp上传功能,true 禁止（只生成数据文件，保留在FileDir对应的目录下面）
 		//自定义文件名称
@@ -96,7 +98,7 @@ public class HBase2FileFtpBatchSplitFileDemo {
 
 			}
 		});
-		importBuilder.setFileFtpOupputConfig(fileFtpOupputConfig);
+		importBuilder.setFileOupputConfig(fileFtpOupputConfig);
 		importBuilder.setIncreamentEndOffset(300);//单位秒，同步从上次同步截止时间当前时间前5分钟的数据，下次继续从上次截止时间开始同步数据
 		/**
 		 * hbase参数配置
