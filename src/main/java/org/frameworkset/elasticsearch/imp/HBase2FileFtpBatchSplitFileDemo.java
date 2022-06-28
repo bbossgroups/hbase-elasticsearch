@@ -20,11 +20,12 @@ import org.frameworkset.runtime.CommonLauncher;
 import org.frameworkset.tran.CommonRecord;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
+import org.frameworkset.tran.config.ImportBuilder;
 import org.frameworkset.tran.context.Context;
-import org.frameworkset.tran.hbase.input.fileftp.HBase2FileFtpImportBuilder;
-import org.frameworkset.tran.output.fileftp.FileOupputConfig;
 import org.frameworkset.tran.output.fileftp.FilenameGenerator;
 import org.frameworkset.tran.output.ftp.FtpOutConfig;
+import org.frameworkset.tran.plugin.file.output.FileOutputConfig;
+import org.frameworkset.tran.plugin.hbase.input.HBaseInputConfig;
 import org.frameworkset.tran.schedule.CallInterceptor;
 import org.frameworkset.tran.schedule.TaskContext;
 import org.frameworkset.tran.util.RecordGenerator;
@@ -43,10 +44,10 @@ import java.util.Date;
  */
 public class HBase2FileFtpBatchSplitFileDemo {
 	public static void main(String[] args){
-		HBase2FileFtpImportBuilder importBuilder = new HBase2FileFtpImportBuilder();
+		ImportBuilder importBuilder = new ImportBuilder();
 		importBuilder.setBatchSize(500).setFetchSize(1000);
 		String ftpIp = CommonLauncher.getProperty("ftpIP","10.13.6.127");//同时指定了默认值
-		FileOupputConfig fileFtpOupputConfig = new FileOupputConfig();
+		FileOutputConfig fileFtpOupputConfig = new FileOutputConfig();
 		FtpOutConfig ftpOutConfig = new FtpOutConfig();
 		ftpOutConfig.setFtpIP(ftpIp);
 
@@ -98,14 +99,15 @@ public class HBase2FileFtpBatchSplitFileDemo {
 
 			}
 		});
-		importBuilder.setFileOupputConfig(fileFtpOupputConfig);
+		importBuilder.setOutputConfig(fileFtpOupputConfig);
 		importBuilder.setIncreamentEndOffset(300);//单位秒，同步从上次同步截止时间当前时间前5分钟的数据，下次继续从上次截止时间开始同步数据
 		/**
 		 * hbase参数配置
 		 */
-//		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+		HBaseInputConfig hBaseInputConfig = new HBaseInputConfig();
+//		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 //				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
-		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","10.13.11.12")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","10.13.6.12")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2185")
 				.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
 				.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
@@ -134,7 +136,7 @@ public class HBase2FileFtpBatchSplitFileDemo {
 //
 //		scvf.setFilterIfMissing(true); //默认为false， 没有此列的数据也会返回 ，为true则只返回name=lisi的数据
 //
-//		importBuilder.setFilter(scvf);
+//		hBaseInputConfig.setFilter(scvf);
 
 		/**
 		 * 设置hbase组合条件FilterList
@@ -154,15 +156,15 @@ public class HBase2FileFtpBatchSplitFileDemo {
 //				CompareOperator.EQUAL,Bytes.toBytes("my other value"));
 //
 //		list.addFilter(filter2);
-//		importBuilder.setFilterList(list);
+//		hBaseInputConfig.setFilterList(list);
 
 //		//设置同步起始行和终止行key条件
-//		importBuilder.setStartRow(startRow);
-//		importBuilder.setEndRow(endRow);
+//		hBaseInputConfig.setStartRow(startRow);
+//		hBaseInputConfig.setEndRow(endRow);
 		//设置记录起始时间搓（>=）和截止时间搓(<),如果是基于时间范围的增量同步，则不需要指定下面两个参数
-//		importBuilder.setStartTimestamp(startTimestam);
-//		importBuilder.setEndTimestamp(endTimestamp);
-
+//		hBaseInputConfig.setStartTimestamp(startTimestam);
+//		hBaseInputConfig.setEndTimestamp(endTimestamp);
+		importBuilder.setInputConfig(hBaseInputConfig);
 		//定时任务配置，
 		importBuilder.setFixedRate(false)//参考jdk timer task文档对fixedRate的说明
 //					 .setScheduleDate(date) //指定任务开始执行时间：日期

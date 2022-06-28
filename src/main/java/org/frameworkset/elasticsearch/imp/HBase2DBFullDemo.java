@@ -18,9 +18,10 @@ package org.frameworkset.elasticsearch.imp;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.tran.DataRefactor;
 import org.frameworkset.tran.DataStream;
+import org.frameworkset.tran.config.ImportBuilder;
 import org.frameworkset.tran.context.Context;
-import org.frameworkset.tran.db.DBConfigBuilder;
-import org.frameworkset.tran.hbase.input.db.HBase2DBExportBuilder;
+import org.frameworkset.tran.plugin.db.output.DBOutputConfig;
+import org.frameworkset.tran.plugin.hbase.input.HBaseInputConfig;
 import org.frameworkset.tran.schedule.CallInterceptor;
 import org.frameworkset.tran.schedule.TaskContext;
 
@@ -61,7 +62,7 @@ public class HBase2DBFullDemo {
 
 
 	public void scheduleScrollRefactorImportData(){
-		HBase2DBExportBuilder importBuilder = new HBase2DBExportBuilder();
+		ImportBuilder importBuilder = new ImportBuilder();
 		importBuilder.setBatchSize(1000) //设置批量写入目标Elasticsearch记录数
 				.setFetchSize(10000); //设置批量从源Hbase中拉取的记录数,HBase-0.98 默认值为为 100，HBase-1.2 默认值为 2147483647，即 Integer.MAX_VALUE。Scan.next() 的一次 RPC 请求 fetch 的记录条数。配置建议：这个参数与下面的setMaxResultSize配合使用，在网络状况良好的情况下，自定义设置不宜太小， 可以直接采用默认值，不配置。
 
@@ -73,9 +74,11 @@ public class HBase2DBFullDemo {
 		/**
 		 * hbase参数配置
 		 */
-//		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+		HBaseInputConfig hBaseInputConfig = new HBaseInputConfig();
+//		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 //				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
-		importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","10.13.11.12")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+
+		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","10.13.6.12")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2185")
 				.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
 				.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
@@ -104,7 +107,7 @@ public class HBase2DBFullDemo {
 //
 //		scvf.setFilterIfMissing(true); //默认为false， 没有此列的数据也会返回 ，为true则只返回name=lisi的数据
 //
-//		importBuilder.setFilter(scvf);
+//		hBaseInputConfig.setFilter(scvf);
 
 		/**
 		 * 设置hbase组合条件FilterList
@@ -124,27 +127,27 @@ public class HBase2DBFullDemo {
 //				CompareOperator.EQUAL,Bytes.toBytes("my other value"));
 //
 //		list.addFilter(filter2);
-//		importBuilder.setFilterList(list);
+//		hBaseInputConfig.setFilterList(list);
 
 //		//设置同步起始行和终止行key条件
-//		importBuilder.setStartRow(startRow);
-//		importBuilder.setEndRow(endRow);
+//		hBaseInputConfig.setStartRow(startRow);
+//		hBaseInputConfig.setEndRow(endRow);
 		//设置记录起始时间搓（>=）和截止时间搓(<),如果是基于时间范围的增量同步，则不需要指定下面两个参数
-//		importBuilder.setStartTimestamp(startTimestam);
-//		importBuilder.setEndTimestamp(endTimestamp);
-
+//		hBaseInputConfig.setStartTimestamp(startTimestam);
+//		hBaseInputConfig.setEndTimestamp(endTimestamp);
+		importBuilder.setInputConfig(hBaseInputConfig);
 		//导出到数据源配置
-		DBConfigBuilder dbConfigBuilder = new DBConfigBuilder();
+		DBOutputConfig dbConfigBuilder = new DBOutputConfig();
 		dbConfigBuilder
 				.setSqlFilepath("sql-dbtran.xml")
 
-				.setTargetDbName("testds")//指定目标数据库，在application.properties文件中配置
-				.setTargetDbDriver("com.mysql.cj.jdbc.Driver") //数据库驱动程序，必须导入相关数据库的驱动jar包
-				.setTargetDbUrl("jdbc:mysql://localhost:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false")
-				.setTargetDbUser("root")
-				.setTargetDbPassword("123456")
-				.setTargetValidateSQL("select 1")
-				.setTargetUsePool(true)//是否使用连接池
+				.setDbName("testds")//指定目标数据库，在application.properties文件中配置
+				.setDbDriver("com.mysql.cj.jdbc.Driver") //数据库驱动程序，必须导入相关数据库的驱动jar包
+				.setDbUrl("jdbc:mysql://localhost:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false&rewriteBatchedStatements=true")
+				.setDbUser("root")
+				.setDbPassword("123456")
+				.setValidateSQL("select 1")
+				.setUsePool(true)//是否使用连接池
 				.setInsertSqlName("hbase2dbInsertSql");//指定新增的sql语句名称，在配置文件中配置：sql-dbtran.xml
 //				.setUpdateSqlName("updateSql")//指定修改的sql语句名称，在配置文件中配置：sql-dbtran.xml
 //				.setDeleteSqlName("deleteSql")//指定删除的sql语句名称，在配置文件中配置：sql-dbtran.xml
@@ -156,7 +159,8 @@ public class HBase2DBFullDemo {
 				 * @return
 				 */
 //				.setOptimize(true);//指定查询源库的sql语句，在配置文件中配置：sql-dbtran.xml
-		importBuilder.setOutputDBConfig(dbConfigBuilder.buildDBImportConfig());
+		importBuilder.setOutputConfig(dbConfigBuilder);
+
 		importBuilder.setUseLowcase(false) ;  //可选项，true 列名称转小写，false列名称不转换小写，默认false，只要在UseJavaName为false的情况下，配置才起作用
 
 

@@ -16,11 +16,11 @@ package org.frameworkset.elasticsearch.imp;
  */
 
 import org.frameworkset.tran.DataRefactor;
-import org.frameworkset.tran.EsIdGenerator;
-import org.frameworkset.tran.config.ClientOptions;
+import org.frameworkset.tran.config.ImportBuilder;
 import org.frameworkset.tran.context.Context;
-import org.frameworkset.tran.es.ESField;
-import org.frameworkset.tran.hbase.HBaseExportBuilder;
+import org.frameworkset.tran.plugin.es.output.ElasticsearchOutputConfig;
+import org.frameworkset.tran.plugin.hbase.input.HBaseEsIdGenerator;
+import org.frameworkset.tran.plugin.hbase.input.HBaseInputConfig;
 import org.frameworkset.tran.schedule.CallInterceptor;
 import org.frameworkset.tran.schedule.ExternalScheduler;
 import org.frameworkset.tran.schedule.TaskContext;
@@ -44,14 +44,18 @@ public class QuartzHBase2ESImportTask extends AbstractQuartzJobHandler {
 	public void init(){
 		externalScheduler = new ExternalScheduler();
 		externalScheduler.dataStream((Object params)->{
-			HBaseExportBuilder importBuilder = new HBaseExportBuilder();
+			ImportBuilder importBuilder = new ImportBuilder();
 			importBuilder.setBatchSize(1000) //设置批量从源Elasticsearch中拉取的记录数
 					.setFetchSize(5000); //设置批量写入目标Elasticsearch记录数
 
 			/**
 			 * hbase参数配置
 			 */
-			importBuilder.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")
+			HBaseInputConfig hBaseInputConfig = new HBaseInputConfig();
+//		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+//				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
+
+			hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")
 					.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
 					.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
 					.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
@@ -72,11 +76,16 @@ public class QuartzHBase2ESImportTask extends AbstractQuartzJobHandler {
 			/**
 			 * es相关配置
 			 */
-			importBuilder.setIndex("hbase2esquartzdemo") //全局设置要目标elasticsearch索引名称
-					.setIndexType("hbase2esquartzdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
-			importBuilder.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
+			ElasticsearchOutputConfig elasticsearchOutputConfig = new ElasticsearchOutputConfig();
+			elasticsearchOutputConfig.setIndex("hbase2esquartzdemo") //全局设置要目标elasticsearch索引名称
+//					.setIndexType("hbase2esquartzdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
+				.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
 
+			elasticsearchOutputConfig.setEsIdGenerator(new HBaseEsIdGenerator());
+			elasticsearchOutputConfig.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false
+			elasticsearchOutputConfig.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认false
 
+			importBuilder.setOutputConfig(elasticsearchOutputConfig);
 
 			//定时任务配置，
 			importBuilder.setFixedRate(false)//参考jdk timer task文档对fixedRate的说明
@@ -277,24 +286,6 @@ public class QuartzHBase2ESImportTask extends AbstractQuartzJobHandler {
 			});
 			//映射和转换配置结束
 
-			importBuilder.setEsIdGenerator(new EsIdGenerator(){
-
-				@Override
-				public Object genId(Context context) throws Exception {
-					ClientOptions clientOptions = context.getClientOptions();
-					ESField esIdField = clientOptions != null?clientOptions.getIdField():null;
-					if (esIdField != null) {
-						Object id = null;
-						if(!esIdField.isMeta())
-							id = context.getValue(esIdField.getField());
-						else
-							id = context.getMetaValue(esIdField.getField());
-						String agentId = BytesUtils.safeTrim(BytesUtils.toString((byte[]) id, 0, PinpointConstants.AGENT_NAME_MAX_LEN));
-						return agentId;
-					}
-					return null;
-				}
-			});
 			/**
 			 * 内置线程池配置，实现多线程并行数据导入功能，作业完成退出时自动关闭该线程池
 			 */
@@ -303,11 +294,7 @@ public class QuartzHBase2ESImportTask extends AbstractQuartzJobHandler {
 			importBuilder.setThreadCount(50);//设置批量导入线程池工作线程数量
 			importBuilder.setContinueOnError(true);//任务出现异常，是否继续执行作业：true（默认值）继续执行 false 中断作业执行
 			importBuilder.setAsyn(false);//true 异步方式执行，不等待所有导入作业任务结束，方法快速返回；false（默认值） 同步方式执行，等待所有导入作业任务结束，所有作业结束后方法才返回
-//		importBuilder.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false，不打印响应报文将大大提升性能，只有在调试需要的时候才打开，log日志级别同时要设置为INFO
-//		importBuilder.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认true，如果不需要响应报文将大大提升处理速度
 			importBuilder.setPrintTaskLog(true);
-			importBuilder.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false
-			importBuilder.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认false
 
 
 			return importBuilder;
