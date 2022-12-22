@@ -161,7 +161,7 @@ public class HBase2KafkaFullDemo {
 			}
 
 			@Override
-			public void exception(TaskCommand<Object, RecordMetadata> taskCommand, Exception exception) {
+			public void exception(TaskCommand<Object, RecordMetadata> taskCommand, Throwable exception) {
 				System.out.println(taskCommand.getTaskMetrics());
 			}
 
@@ -191,7 +191,7 @@ public class HBase2KafkaFullDemo {
 			}
 
 			@Override
-			public void throwException(TaskContext taskContext, Exception e) {
+			public void throwException(TaskContext taskContext, Throwable e) {
 				System.out.println("throwException");
 			}
 		}).addCallInterceptor(new CallInterceptor() {
@@ -206,7 +206,7 @@ public class HBase2KafkaFullDemo {
 			}
 
 			@Override
-			public void throwException(TaskContext taskContext, Exception e) {
+			public void throwException(TaskContext taskContext, Throwable e) {
 				System.out.println("throwException 1");
 			}
 		});
