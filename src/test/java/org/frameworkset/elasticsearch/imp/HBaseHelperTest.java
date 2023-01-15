@@ -21,8 +21,9 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.frameworkset.nosql.hbase.HBaseHelper;
-import org.frameworkset.nosql.hbase.HbaseTemplate2;
+import org.frameworkset.nosql.hbase.HBaseHelperFactory;
 import org.frameworkset.nosql.hbase.TableFactory;
+import org.frameworkset.tran.plugin.hbase.HBasePluginConfig;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -39,6 +40,45 @@ import java.util.Map;
  * @version 1.0
  */
 public class HBaseHelperTest {
+	@Test
+	public void createTable(){
+
+		Map<String,String> properties = new HashMap<String, String>();
+		properties.put("hbase.zookeeper.quorum","192.168.137.133");
+		properties.put("hbase.zookeeper.property.clientPort","2183");
+		properties.put("zookeeper.znode.parent","/hbase");
+		properties.put("hbase.ipc.client.tcpnodelay","true");
+		properties.put("hbase.rpc.timeout","10000");
+		properties.put("hbase.client.operation.timeout","10000");
+		properties.put("hbase.ipc.client.socket.timeout.read","20000");
+		properties.put("hbase.ipc.client.socket.timeout.write","30000");
+		//异步写入hbase
+		/**
+		 *     public static final String TABLE_MULTIPLEXER_FLUSH_PERIOD_MS = "hbase.tablemultiplexer.flush.period.ms";
+		 *     public static final String TABLE_MULTIPLEXER_INIT_THREADS = "hbase.tablemultiplexer.init.threads";
+		 *     public static final String TABLE_MULTIPLEXER_MAX_RETRIES_IN_QUEUE = "hbase.client.max.retries.in.queue";
+		 */
+		properties.put("hbase.client.async.enable","true");
+		properties.put("hbase.client.async.in.queuesize","10000");
+		HBasePluginConfig hBasePluginConfig = new HBasePluginConfig();
+		hBasePluginConfig.setHbaseClientProperties(properties);
+		hBasePluginConfig.setHbaseClientThreadCount(100);
+		hBasePluginConfig.setHbaseClientThreadQueue(100);
+		hBasePluginConfig.setHbaseClientKeepAliveTime(0L);
+		hBasePluginConfig.setHbaseClientBlockedWaitTimeout(1000L);
+		hBasePluginConfig.setHbaseClientWarnMultsRejects(1000);
+		hBasePluginConfig.setHbaseClientPreStartAllCoreThreads(true);
+		hBasePluginConfig.setHbaseClientThreadDaemon(false);
+
+
+
+		HBaseHelperFactory.buildHBaseClient(hBasePluginConfig);
+		HBaseHelper hBaseHelper = HBaseHelperFactory.getHBaseHelper("default");
+		String tableName = "demo";
+		hBaseHelper.createTable(tableName,new String[]{"info"});
+		tableName = "esdemo";
+		hBaseHelper.createTable(tableName,new String[]{"info"});
+	}
 	@Test
 	public void testPutDatas(){
 		Map<String,String> properties = new HashMap<String, String>();
@@ -58,24 +98,38 @@ public class HBaseHelperTest {
 		 */
 		properties.put("hbase.client.async.enable","true");
 		properties.put("hbase.client.async.in.queuesize","10000");
-		HBaseHelper.buildHBaseClient(properties,100,100,0L,1000l,1000,true,true,false);
-		HbaseTemplate2 hbaseTemplate2 = HBaseHelper.getHbaseTemplate2();
+		HBasePluginConfig hBasePluginConfig = new HBasePluginConfig();
+		hBasePluginConfig.setHbaseClientProperties(properties);
+		hBasePluginConfig.setHbaseClientThreadCount(100);
+		hBasePluginConfig.setHbaseClientThreadQueue(100);
+		hBasePluginConfig.setHbaseClientKeepAliveTime(0L);
+		hBasePluginConfig.setHbaseClientBlockedWaitTimeout(1000L);
+		hBasePluginConfig.setHbaseClientWarnMultsRejects(1000);
+		hBasePluginConfig.setHbaseClientPreStartAllCoreThreads(true);
+		hBasePluginConfig.setHbaseClientThreadDaemon(false);
+
+
+
+		HBaseHelperFactory.buildHBaseClient(hBasePluginConfig);
+		HBaseHelper hBaseHelper = HBaseHelperFactory.getHBaseHelper("default");
+//		int threadCount, int threadQueue, long keepAliveTime, long blockedWaitTimeout, int warnMultsRejects, boolean preStartAllCoreThreads, Boolean daemon;
 		byte[] CF = Bytes.toBytes("Info");
 		byte[] C_I = Bytes.toBytes("i");
 		byte[] C_j = Bytes.toBytes("j");
 		byte[] C_m = Bytes.toBytes("m");
+		byte[] C_n = Bytes.toBytes("n");
 		final List<Put> datas = new ArrayList<>();
 		 for(int i= 0; i < 100; i ++){
 		 	 long timestamp = System.currentTimeMillis() ;
-			 final byte[] rowKey = Bytes.toBytes(i+"-"+timestamp);
+			 final byte[] rowKey = Bytes.toBytes(i);
 			 final Put put = new Put(rowKey, timestamp);
 			 put.addColumn(CF, C_I,timestamp, Bytes.toBytes( "wap_"+i));
 			 put.addColumn(CF, C_j,timestamp, Bytes.toBytes( "jdk 1.8_"+i));
 			 put.addColumn(CF, C_m,timestamp, Bytes.toBytes( "asdfasfd_"+i));
+			 put.addColumn(CF, C_n,timestamp, Bytes.toBytes( i));
 			 datas.add(put);
 		 }
-		TableName traceTableName = TableName.valueOf("AgentInfo");
-		hbaseTemplate2.asyncPut(traceTableName,datas);
+		hBaseHelper.put("AgentInfo",datas);
 	}
 	@Test
 	public void testHBaseHelper(){
@@ -89,9 +143,21 @@ public class HBaseHelperTest {
 		properties.put("hbase.client.operation.timeout","10000");
 		properties.put("hbase.ipc.client.socket.timeout.read","20000");
 		properties.put("hbase.ipc.client.socket.timeout.write","30000");
+		HBasePluginConfig hBasePluginConfig = new HBasePluginConfig();
+		hBasePluginConfig.setHbaseClientProperties(properties);
+		hBasePluginConfig.setHbaseClientThreadCount(100);
+		hBasePluginConfig.setHbaseClientThreadQueue(100);
+		hBasePluginConfig.setHbaseClientKeepAliveTime(0L);
+		hBasePluginConfig.setHbaseClientBlockedWaitTimeout(1000L);
+		hBasePluginConfig.setHbaseClientWarnMultsRejects(1000);
+		hBasePluginConfig.setHbaseClientPreStartAllCoreThreads(true);
+		hBasePluginConfig.setHbaseClientThreadDaemon(false);
 
-		HBaseHelper.buildHBaseClient(properties,100,100,0L,1000l,1000,true,true,false);
-		TableFactory tableFactory = HBaseHelper.getTableFactory();
+
+
+		HBaseHelperFactory.buildHBaseClient(hBasePluginConfig);
+		HBaseHelper hBaseHelper = HBaseHelperFactory.getHBaseHelper("default");
+		TableFactory tableFactory = hBaseHelper.getTableFactory();
 		Table table = tableFactory.getTable(TableName.valueOf("AgentInfo"));
 		Scan scan = new Scan();
 		scan.setFilter(null);
