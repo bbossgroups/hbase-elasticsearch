@@ -78,6 +78,10 @@ public class HBaseHelperTest {
 		hBaseHelper.createTable(tableName,new String[]{"info"});
 		tableName = "esdemo";
 		hBaseHelper.createTable(tableName,new String[]{"info"});
+
+		tableName = "customdemo";
+		hBaseHelper.createTable(tableName,new String[]{"info"});
+
 	}
 	@Test
 	public void testPutDatas(){
