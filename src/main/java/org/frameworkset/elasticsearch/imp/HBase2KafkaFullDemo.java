@@ -165,10 +165,6 @@ public class HBase2KafkaFullDemo {
 				System.out.println(taskCommand.getTaskMetrics());
 			}
 
-			@Override
-			public int getMaxRetry() {
-				return 0;
-			}
 		});
 
 		//定时任务配置，

@@ -373,10 +373,7 @@ public class HBase2ESScrollTimestampDemo {
 				logger.info(taskMetrics.toString());
 			}
 
-			@Override
-			public int getMaxRetry() {
-				return 0;
-			}
+
 		});
 		/**
 		 * 执行es数据导入数据库表操作
