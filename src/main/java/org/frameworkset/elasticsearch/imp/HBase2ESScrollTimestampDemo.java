@@ -70,7 +70,7 @@ public class HBase2ESScrollTimestampDemo {
 //		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 //				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")
 
-		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","10.13.6.12")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
+		hBaseInputConfig.addHbaseClientProperty("hbase.zookeeper.quorum","localhost:7001")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2185")
 				.addHbaseClientProperty("zookeeper.znode.parent","/hbase")
 				.addHbaseClientProperty("hbase.ipc.client.tcpnodelay","true")
