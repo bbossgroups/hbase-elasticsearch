@@ -89,7 +89,7 @@ public class HBase2ESScrollTimestampDemo {
 
 				.setHbaseTable("AgentInfo") //指定需要同步数据的hbase表名称
 				;
-		//FilterList和filter二选一，只需要设置一种
+//		//FilterList和filter二选一，只需要设置一种
 //		/**
 //		 * 设置hbase检索filter
 //		 */
@@ -100,12 +100,12 @@ public class HBase2ESScrollTimestampDemo {
 //		scvf.setFilterIfMissing(true); //默认为false， 没有此列的数据也会返回 ，为true则只返回name=lisi的数据
 //
 //		hBaseInputConfig.setFilter(scvf);
-
-		/**
-		 * 设置hbase组合条件FilterList
-		 * FilterList 代表一个过滤器链，它可以包含一组即将应用于目标数据集的过滤器，过滤器间具有“与” FilterList.Operator.MUST_PASS_ALL 和“或” FilterList.Operator.MUST_PASS_ONE 关系
-		 */
-
+//
+//		/**
+//		 * 设置hbase组合条件FilterList
+//		 * FilterList 代表一个过滤器链，它可以包含一组即将应用于目标数据集的过滤器，过滤器间具有“与” FilterList.Operator.MUST_PASS_ALL 和“或” FilterList.Operator.MUST_PASS_ONE 关系
+//		 */
+//
 //		FilterList list = new FilterList(FilterList.Operator.MUST_PASS_ONE); //数据只要满足一组过滤器中的一个就可以
 //
 //		SingleColumnValueFilter filter1 = new SingleColumnValueFilter(Bytes.toBytes("Info"), Bytes.toBytes("i"),
@@ -120,11 +120,11 @@ public class HBase2ESScrollTimestampDemo {
 //
 //		list.addFilter(filter2);
 //		hBaseInputConfig.setFilterList(list);
-
-//		//设置同步起始行和终止行key条件
+//
+////		//设置同步起始行和终止行key条件
 //		hBaseInputConfig.setStartRow(startRow);
 //		hBaseInputConfig.setEndRow(endRow);
-		//设置记录起始时间搓（>=）和截止时间搓(<),如果是基于时间范围的增量同步，则不需要指定下面两个参数
+//		//设置记录起始时间搓（>=）和截止时间搓(<),如果是基于时间范围的增量同步，则不需要指定下面两个参数
 //		hBaseInputConfig.setStartTimestamp(startTimestam);
 //		hBaseInputConfig.setEndTimestamp(endTimestamp);
 
