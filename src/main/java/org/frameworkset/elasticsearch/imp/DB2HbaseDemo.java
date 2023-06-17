@@ -58,8 +58,9 @@ public class DB2HbaseDemo {
 		ImportBuilder importBuilder = new ImportBuilder();
 		// 5.2.4.1 设置hbase参数
 		HBaseOutputConfig hBaseOutputConfig = new HBaseOutputConfig();
-		hBaseOutputConfig.setName("targethbase");
-		hBaseOutputConfig.setFamiliy("info").setHbaseTable("demo") ;//指定需要同步数据的hbase表名称;
+		hBaseOutputConfig.setName("targethbase");//hbase数据源名称
+		hBaseOutputConfig.setFamiliy("info")//指定需要同步数据的hbase表列簇名称;
+                .setHbaseTable("demo") ;//指定需要同步数据的hbase表名称;
 		hBaseOutputConfig.setRowKeyField("LOG_ID")
 				.addHbaseClientProperty("hbase.zookeeper.quorum","192.168.137.133")  //hbase客户端连接参数设置，参数含义参考hbase官方客户端文档
 				.addHbaseClientProperty("hbase.zookeeper.property.clientPort","2183")

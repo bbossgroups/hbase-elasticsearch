@@ -58,7 +58,7 @@ public class DB2HbaseWithFamilyColumnDemo {
 		ImportBuilder importBuilder = new ImportBuilder();
 		// 5.2.4.1 设置hbase参数
 		HBaseOutputConfig hBaseOutputConfig = new HBaseOutputConfig();
-		hBaseOutputConfig.setName("targethbase");
+		hBaseOutputConfig.setName("targethbase");//hbase数据源名称
 		hBaseOutputConfig.setHbaseTable("customdemo") ;//指定需要同步数据的hbase表名称;
 		hBaseOutputConfig.addFamilyColumnMapping("info","LOG_ID","logId");
 		hBaseOutputConfig.addFamilyColumnMapping("info","LOG_OPERUSER","logOperUser");
