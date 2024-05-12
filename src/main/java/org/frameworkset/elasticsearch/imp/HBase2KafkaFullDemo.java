@@ -149,19 +149,19 @@ public class HBase2KafkaFullDemo {
 			}
 		});
 		importBuilder.setOutputConfig(kafkaOutputConfig);
-		importBuilder.setExportResultHandler(new ExportResultHandler<Object, RecordMetadata>() {
+		importBuilder.setExportResultHandler(new ExportResultHandler<RecordMetadata>() {
 			@Override
-			public void success(TaskCommand<Object, RecordMetadata> taskCommand, RecordMetadata result) {
+			public void success(TaskCommand<RecordMetadata> taskCommand, RecordMetadata result) {
 				System.out.println(taskCommand.getTaskMetrics());
 			}
 
 			@Override
-			public void error(TaskCommand<Object, RecordMetadata> taskCommand, RecordMetadata result) {
+			public void error(TaskCommand<RecordMetadata> taskCommand, RecordMetadata result) {
 				System.out.println(taskCommand.getTaskMetrics());
 			}
 
 			@Override
-			public void exception(TaskCommand<Object, RecordMetadata> taskCommand, Throwable exception) {
+			public void exception(TaskCommand<RecordMetadata> taskCommand, Throwable exception) {
 				System.out.println(taskCommand.getTaskMetrics());
 			}
 
