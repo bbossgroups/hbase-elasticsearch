@@ -177,20 +177,20 @@ public class DB2HbaseDemo {
 		importBuilder.setContinueOnError(true);//任务出现异常，是否继续执行作业：true（默认值）继续执行 false 中断作业执行
 
 		//设置任务处理结果回调接口
-		importBuilder.setExportResultHandler(new ExportResultHandler<Object,String>() {
+		importBuilder.setExportResultHandler(new ExportResultHandler<String>() {
 			@Override
-			public void success(TaskCommand<Object,String> taskCommand, String result) {
+			public void success(TaskCommand<String> taskCommand, String result) {
 				logger.info(taskCommand.getTaskMetrics().toString());//打印任务执行情况
 			}
 
 			@Override
-			public void error(TaskCommand<Object,String> taskCommand, String result) {
+			public void error(TaskCommand<String> taskCommand, String result) {
 				logger.info(taskCommand.getTaskMetrics().toString());//打印任务执行情况
 
 			}
 
 			@Override
-			public void exception(TaskCommand<Object,String> taskCommand, Throwable exception) {
+			public void exception(TaskCommand<String> taskCommand, Throwable exception) {
 				logger.info(taskCommand.getTaskMetrics().toString(),exception);//打印任务执行情况
 			}
 
