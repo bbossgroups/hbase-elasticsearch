@@ -29,9 +29,9 @@ HBase 到elasticsearch数据同步
 [使用参考文档](https://esdoc.bbossgroups.com/#/hbase-elasticsearch)
 
 
-## elasticsearch技术交流群:166471282 
+## 技术交流群:166471282 
 
-## elasticsearch微信公众号:bbossgroup   
+## 微信公众号:bbossgroup   
 ![GitHub Logo](https://static.oschina.net/uploads/space/2017/0617/094201_QhWs_94045.jpg)
 
 
