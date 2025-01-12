@@ -81,7 +81,7 @@ public class QuartzHBase2ESImportTask extends AbstractQuartzJobHandler {
 //					.setIndexType("hbase2esquartzdemo"); //全局设值目标elasticsearch索引类型名称，如果是Elasticsearch 7以后的版本不需要配置
 				.setTargetElasticsearch("targetElasticsearch");//设置目标Elasticsearch集群数据源名称，和源elasticsearch集群一样都在application.properties文件中配置
 
-			elasticsearchOutputConfig.setEsIdGenerator(new HBaseEsIdGenerator());
+			elasticsearchOutputConfig.setEsIdGenerator(new HBaseEsIdGenerator(elasticsearchOutputConfig));
 			elasticsearchOutputConfig.setDebugResponse(false);//设置是否将每次处理的reponse打印到日志文件中，默认false
 			elasticsearchOutputConfig.setDiscardBulkResponse(true);//设置是否需要批量处理的响应报文，不需要设置为false，true为需要，默认false
 
