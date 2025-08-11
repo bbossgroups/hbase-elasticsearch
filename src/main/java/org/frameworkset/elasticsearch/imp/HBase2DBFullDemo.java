@@ -291,6 +291,7 @@ public class HBase2DBFullDemo {
 				byte[] serializedAgentInfo = (byte[]) context.getValue("Info:i");
 				byte[] serializedServerMetaData = (byte[]) context.getValue("Info:m");
 				byte[] serializedJvmInfo = (byte[]) context.getValue("Info:j");
+                byte[] xxx = (byte[]) context.getValue("info:");
 				// 通过context提供的一系列getXXXValue方法，从hbase列族中获取相应类型的数据：int,string,long,double,float,date
 //				String data = context.getStringValue("Info:i");
 				final AgentInfoBo.Builder agentInfoBoBuilder = createBuilderFromValue(serializedAgentInfo);
