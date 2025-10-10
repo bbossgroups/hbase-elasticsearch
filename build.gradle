@@ -126,8 +126,8 @@ configure(allprojects) { project ->
 		testImplementation 'junit:junit:4.13.1'
 
 		api(
-				[group: 'com.bbossgroups.plugins', name: 'bboss-datatran-hbase', version: "${bboss_es_version}", transitive: true],
-				[group: 'com.bbossgroups.plugins', name: 'bboss-datatran-fileftp', version: "${bboss_es_version}", transitive: true],
+				[group: 'com.bbossgroups.plugins', name: 'bboss-datatran-hbase', version: bboss_es_version, transitive: true],
+				[group: 'com.bbossgroups.plugins', name: 'bboss-datatran-fileftp', version: bboss_es_version, transitive: true],
 				[group: 'com.bbossgroups', name: 'bboss-schedule', version: "${bboss_version}", transitive: true],
 		)
 //		api 'org.apache-extras.beanshell:bsh:2.0b6'
@@ -149,7 +149,7 @@ configure(allprojects) { project ->
 		api([group: 'org.apache.hbase', name: 'hbase-shaded-client', version: "2.4.3", transitive: true])
 
 		api(
-				[group: 'com.bbossgroups.plugins', name: 'bboss-datatran-kafka2x', version: "${bboss_es_version}", transitive: true],
+				[group: 'com.bbossgroups.plugins', name: 'bboss-datatran-kafka2x', version: bboss_es_version, transitive: true],
 		)
 		api (
 				[group: 'org.apache.kafka', name: 'kafka_2.12', version: "${kafka2x}", transitive: true],
